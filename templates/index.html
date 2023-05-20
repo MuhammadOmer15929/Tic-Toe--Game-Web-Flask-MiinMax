@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tic-Tac-Toe</title>
+    <style>
+        /* Add your own custom styles here */
+
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+
+        h1 {
+            margin-top: 20px;
+        }
+
+        .board {
+            display: inline-block;
+            margin-top: 20px;
+        }
+
+        .board-row {
+            clear: both;
+            content: "";
+            display: table;
+        }
+
+        .board-cell {
+            float: left;
+            width: 50px;
+            height: 50px;
+            border: 1px solid #ccc;
+            text-align: center;
+            line-height: 50px;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .status {
+            margin-top: 20px;
+        }
+
+        .reset-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        @media screen and (max-width: 600px) {
+            .board-cell {
+                width: 40px;
+                height: 40px;
+                line-height: 40px;
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Tic-Tac-Toe</h1>
+
+    <div class="board">
+        <div class="board-row">
+            <div class="board-cell" onclick="makeMove(0, 0)"></div>
+            <div class="board-cell" onclick="makeMove(0, 1)"></div>
+            <div class="board-cell" onclick="makeMove(0, 2)"></div>
+        </div>
+        <div class="board-row">
+            <div class="board-cell" onclick="makeMove(1, 0)"></div>
+            <div class="board-cell" onclick="makeMove(1, 1)"></div>
+            <div class="board-cell" onclick="makeMove(1, 2)"></div>
+        </div>
+        <div class="board-row">
+            <div class="board-cell" onclick="makeMove(2, 0)"></div>
+            <div class="board-cell" onclick="makeMove(2, 1)"></div>
+            <div class="board-cell" onclick="makeMove(2, 2)"></div>
+        </div>
+    </div>
+
+    <div class="status">
+        <p id="win-status"></p>
+    </div>
+
+    <button class="reset-button" onclick="resetBoard()">Reset</button>
+
+    <script>
+        // JavaScript functions to handle game logic
+
+        var currentPlayer = 'X';
+        var gameOver = false;
+
+        function makeMove(row, column) {
+            if (!gameOver) {
+                var cell = document.getElementsByClassName('board-row')[row].getElementsByClassName('board-cell')[column];
+                if (cell.innerHTML === '') {
+                    cell.innerHTML = currentPlayer;
+
+                    // Send the move to the server
+                    var board = getBoard();
+                    sendMove(board);
+
+                    // Check for a winner
+                    var winStatus = checkWinner();
+                    if (winStatus) {
+                        gameOver = true;
+                        document.getElementById('win-status').innerHTML = winStatus + ' wins!';
+                    } else if (isBoardFull()) {
+                        gameOver = true;
+                        document.getElementById('win-status').innerHTML = 'It\'s a tie!';
+                    } else {
+                        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                    }
+                }
+            }
+        }
+
+        function resetBoard() {
+            // Clear the board
+            var cells = document.getElementsByClassName('board-cell');
+            for (var i = 0; i < cells.length; i++) {
+                cells[i].innerHTML = '';
+            }
+
+            // Reset game status
+            currentPlayer = 'X';
+            gameOver = false;
+            document.getElementById('win-status').innerHTML = '';
+        }
+
+        function getBoard() {
+            var cells = document.getElementsByClassName('board-cell');
+            var board = [];
+            for (var i = 0; i < cells.length; i++) {
+                board.push(cells[i].innerHTML);
+            }
+            return board;
+        }
+
+        function sendMove(board) {
+            // Send an AJAX request to the server to get the next move
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/play', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                    var response = JSON.parse(xhr.responseText);
+                    makeMove(response.row, response.column);
+                }
+            };
+            xhr.send(JSON.stringify({ board: board }));
+        }
+
+        function checkWinner() {
+            // Check rows
+            for (var i = 0; i < 3; i++) {
+                if (checkRow(i)) {
+                    return document.getElementsByClassName('board-row')[i].getElementsByClassName('board-cell')[0].innerHTML;
+                }
+            }
+
+            // Check columns
+            for (var j = 0; j < 3; j++) {
+                if (checkColumn(j)) {
+                    return document.getElementsByClassName('board-row')[0].getElementsByClassName('board-cell')[j].innerHTML;
+                }
+            }
+
+            // Check diagonals
+            if (checkDiagonal()) {
+                return document.getElementsByClassName('board-row')[0].getElementsByClassName('board-cell')[0].innerHTML;
+            }
+            if (checkAntiDiagonal()) {
+                return document.getElementsByClassName('board-row')[0].getElementsByClassName('board-cell')[2].innerHTML;
+            }
+
+            return null;
+        }
+
+        function checkRow(row) {
+            var cell1 = document.getElementsByClassName('board-row')[row].getElementsByClassName('board-cell')[0].innerHTML;
+            var cell2 = document.getElementsByClassName('board-row')[row].getElementsByClassName('board-cell')[1].innerHTML;
+            var cell3 = document.getElementsByClassName('board-row')[row].getElementsByClassName('board-cell')[2].innerHTML;
+            return cell1 !== '' && cell1 === cell2 && cell2 === cell3;
+        }
+
+        function checkColumn(column) {
+            var cell1 = document.getElementsByClassName('board-row')[0].getElementsByClassName('board-cell')[column].innerHTML;
+            var cell2 = document.getElementsByClassName('board-row')[1].getElementsByClassName('board-cell')[column].innerHTML;
+            var cell3 = document.getElementsByClassName('board-row')[2].getElementsByClassName('board-cell')[column].innerHTML;
+            return cell1 !== '' && cell1 === cell2 && cell2 === cell3;
+        }
+
+        function checkDiagonal() {
+            var cell1 = document.getElementsByClassName('board-row')[0].getElementsByClassName('board-cell')[0].innerHTML;
+            var cell2 = document.getElementsByClassName('board-row')[1].getElementsByClassName('board-cell')[1].innerHTML;
+            var cell3 = document.getElementsByClassName('board-row')[2].getElementsByClassName('board-cell')[2].innerHTML;
+            return cell1 !== '' && cell1 === cell2 && cell2 === cell3;
+        }
+
+        function checkAntiDiagonal() {
+            var cell1 = document.getElementsByClassName('board-row')[0].getElementsByClassName('board-cell')[2].innerHTML;
+            var cell2 = document.getElementsByClassName('board-row')[1].getElementsByClassName('board-cell')[1].innerHTML;
+            var cell3 = document.getElementsByClassName('board-row')[2].getElementsByClassName('board-cell')[0].innerHTML;
+            return cell1 !== '' && cell1 === cell2 && cell2 === cell3;
+        }
+
+        function isBoardFull() {
+            var cells = document.getElementsByClassName('board-cell');
+            for (var i = 0; i < cells.length; i++) {
+                if (cells[i].innerHTML === '') {
+                    return false;
+                }
+            }
+            return true;
+        }
+    </script>
+</body>
+</html>
